@@ -1,8 +1,10 @@
+import os
+os.environ["COLUMNS"] = "75"  # 设置进度条的列宽为100（可以根据需要调整）
+
 from transformers import AutoTokenizer, AutoModelForCausalLM, Trainer, TrainingArguments
 import torch
 from datasets import load_dataset
 import argparse
-import os
 
 from peft import PeftModel
 from peft import get_peft_model, LoraConfig, TaskType
@@ -29,7 +31,7 @@ bad_token = '-'
 step_tag = '\n\n\n\n\n' #ки
 step_tag2 = '\n\n'
 
-model_path = "../../models/Llama-3.2-3B-Instruct"
+model_path = "/home/shaohanh/qilongma/blob/public_models/Meta-Llama-3-8B"
 
 # tokenizer = AutoTokenizer.from_pretrained(model_path)
 
@@ -149,19 +151,23 @@ def preprocess_function(example):
 DATA_PATH = {
     # "train": 'multi-step.json', 
     # 'train': 'test.json',
-    "test": '../../datasets/processed_data/prm800k_test.json',
-    "train": "../../datasets/processed_data/math_aps.json",
+    # "test": '../../datasets/processed_data/prm800k_test.json',
+    # "train": "../../datasets/processed_data/math_aps.json",
     # "train": "../../datasets/processed_data/prm800k/data/phase2_train_new.jsonl",
     # "test": "../../datasets/prm800k-main/prm800k/data/phase2_test_new.jsonl",
+    "train": ["../../datasets/processed_data/prm800k/phase1_train.preprocessed.json", 
+              "../../datasets/processed_data/prm800k/phase2_train.preprocessed.json"], 
+    "test": ["../../datasets/processed_data/prm800k/phase1_test.preprocessed.json", 
+              "../../datasets/processed_data/prm800k/phase2_test.preprocessed.json"], 
     
 }
-dataset2 = load_dataset('json',data_files="../../datasets/processed_data/prm800k_train.json")
+# dataset2 = load_dataset('json',data_files="../../datasets/processed_data/prm800k_train.json")
 
 dataset = load_dataset('json', data_files=DATA_PATH)
 
 # print(dataset['train'][1000:1002])
 
-dataset['train'] = concatenate_datasets([dataset['train'], dataset2['train']])
+# dataset['train'] = concatenate_datasets([dataset['train'], dataset2['train']])
 
 # dataset['train'] = dataset['train'].select(range(10000))
 
@@ -192,7 +198,7 @@ print(ddp)
 
 
 fp = f'bs_{args.total_batch_size}_lr_{args.learning_rate}'
-output_path = f'./prm_llama/{fp}'
+output_path = f'../ckpt/prm_llama/{fp}'
 
 
 # Training arguments
@@ -259,6 +265,6 @@ trainer.train()
 # trainer.evaluate()
 
 # Save the fine-tuned model and tokenizer
-model.save_pretrained('./fine_tuned_llama_1b_mix_lora_16bit')
-tokenizer.save_pretrained('./fine_tuned_llama_1b_mix_lora_16bit')
+model.save_pretrained('../ckpt/prm_llama/fine_tuned_llama3_8b_mix_lora_16bit')
+tokenizer.save_pretrained('../ckpt/prm_llama/fine_tuned_llama3_8b_mix_lora_16bit')
 
