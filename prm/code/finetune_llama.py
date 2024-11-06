@@ -86,7 +86,7 @@ print('step_tag_id2:',tokenizer.encode(f"{step_tag2}"))
 model = AutoModelForCausalLM.from_pretrained(
     model_path,
     # load_in_8bit=True,   # Enables 8-bit quantization
-    # device_map="auto",   # Automatically assigns the model to available GPUs/CPUs
+    device_map="auto",   # Automatically assigns the model to available GPUs/CPUs
     torch_dtype=torch.bfloat16,  # Mixed precision for faster inference
     attn_implementation="flash_attention_2",
 )
