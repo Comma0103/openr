@@ -21,3 +21,5 @@ docs/.bundle/
 docs/vendor/
 
 datasets/
+
+ckpt/
