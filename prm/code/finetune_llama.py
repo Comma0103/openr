@@ -18,9 +18,9 @@ from datasets import concatenate_datasets
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--per_device_train_batch_size", type=int, default=4)
-parser.add_argument("--per_device_eval_batch_size", type=int, default=4)
-parser.add_argument("--total_batch_size", type=int, default=256)
+parser.add_argument("--per_device_train_batch_size", type=int, default=2)
+parser.add_argument("--per_device_eval_batch_size", type=int, default=2)
+parser.add_argument("--total_batch_size", type=int, default=128)
 parser.add_argument("--learning_rate", type=float, default=1e-4)
 
 args = parser.parse_args()
@@ -68,7 +68,7 @@ print(tokenizer.encode('+-'))
 
 # if USE_8bit is True:
 #     model = prepare_model_for_int8_training(model)
-print(tokenizer.eos_token_id)
+print(tokenizer.eos_token_id) # 128001
 
 tokenizer.pad_token_id = 0  # unk. we want this to be different from the eos token
 tokenizer.padding_side = "left"  # Allow batched inference
@@ -86,7 +86,7 @@ print('step_tag_id2:',tokenizer.encode(f"{step_tag2}"))
 model = AutoModelForCausalLM.from_pretrained(
     model_path,
     # load_in_8bit=True,   # Enables 8-bit quantization
-    device_map="auto",   # Automatically assigns the model to available GPUs/CPUs
+    # device_map="auto",   # Automatically assigns the model to available GPUs/CPUs
     torch_dtype=torch.bfloat16,  # Mixed precision for faster inference
     attn_implementation="flash_attention_2",
 )
@@ -209,7 +209,7 @@ training_args = TrainingArguments(
     per_device_train_batch_size=args.per_device_train_batch_size,
     per_device_eval_batch_size=args.per_device_eval_batch_size,
     gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-    num_train_epochs=3,
+    num_train_epochs=2,
     weight_decay=0.01,
     logging_dir="./logs",
     logging_steps=10,
