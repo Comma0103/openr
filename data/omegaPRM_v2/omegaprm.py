@@ -32,7 +32,7 @@ def check_correctness(generated_response: str, expected_answer: str) -> bool:
 
 class LanguageModel:
     def __init__(self, model_name="/root/.cache/modelscope/hub/Qwen/Qwen2___5-Math-7B-Instruct",
-                 device="cuda", max_new_tokens=512, temperature=0.7, top_k=30, top_p=0.9):
+                 device="cuda", max_new_tokens=512, temperature=0.7, top_k=30, top_p=0.9, model_type="vllm"):
         """
         Initialize the LanguageModel with parameters for the LLM service.
 
@@ -50,7 +50,8 @@ class LanguageModel:
             max_new_tokens=max_new_tokens,
             temperature=temperature,
             top_k=top_k,
-            top_p=top_p
+            top_p=top_p,
+            model_type=model_type
         )
         self.default_prompt = (
             "Please complete the answer for the question based on the given steps without generating existing steps again, "
@@ -298,7 +299,7 @@ class OmegaPRM:
             # Selection Phase
             selected_state, selected_rollout = self.selection_phase()
             if selected_state is None or selected_rollout is None:
-                print("No more candidates to explore. Terminating search.\n")
+                # print("No more candidates to explore. Terminating search.\n")
                 break
 
             self.expansion_phase_binary_search(selected_state, selected_rollout)
@@ -336,7 +337,7 @@ class OmegaPRM:
             full_solution = (state.solution_prefix + '\n\n' + rollout).strip() if state.solution_prefix else rollout
             is_correct = self.LM.evaluate_correctness(full_solution, self.expected_answer)
 
-            print(f"Rollout {i + 1} Correctness: {'Correct' if is_correct else 'Incorrect'}\n")
+            # print(f"Rollout {i + 1} Correctness: {'Correct' if is_correct else 'Incorrect'}\n")
 
             if is_correct:
                 c += 1
@@ -534,9 +535,9 @@ class OmegaPRM:
 if __name__ == "__main__":
     # Initialize the Language Model
     LM = LanguageModel(
-
         device="cuda",
-        max_new_tokens=2048
+        max_new_tokens=2048,
+        model_type="vllm"
     )
 
     # Define the question and expected answer
