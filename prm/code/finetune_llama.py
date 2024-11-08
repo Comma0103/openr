@@ -18,10 +18,10 @@ from datasets import concatenate_datasets
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--per_device_train_batch_size", type=int, default=2)
-parser.add_argument("--per_device_eval_batch_size", type=int, default=2)
-parser.add_argument("--total_batch_size", type=int, default=128)
-parser.add_argument("--learning_rate", type=float, default=1e-4)
+parser.add_argument("--per_device_train_batch_size", "--devtrbs", type=int, default=2)
+parser.add_argument("--per_device_eval_batch_size", "--devevbs", type=int, default=2)
+parser.add_argument("--total_batch_size","--totbs", type=int, default=128)
+parser.add_argument("--learning_rate", "--lr", type=float, default=1e-4)
 
 args = parser.parse_args()
 
@@ -212,8 +212,12 @@ training_args = TrainingArguments(
     num_train_epochs=2,
     weight_decay=0.01,
     logging_dir="./logs",
+    log_level="info",
     logging_steps=10,
-    save_strategy="epoch",
+    logging_first_step=True,
+    logging_nan_inf_filter=False,
+    save_strategy="steps",
+    save_steps=0.25,
     bf16=True,  # Enable mixed precision for better performance on supported hardware
     report_to="none",  # Set to "wandb" if you are using Weights and Biases for logging
     dataloader_num_workers=4,
