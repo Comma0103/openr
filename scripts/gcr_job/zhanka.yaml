@@ -1,0 +1,124 @@
+description: test
+
+
+# target:
+#   service: aml
+#   name: alta2
+
+# target:
+#   service: sing
+#   name: msroctovc
+#   resource_group: gcr-singularity-octo
+#   # workspace_name: Workspace_NLC
+#   workspace_name: NLC_Workspace
+
+target:
+  service: sing
+  name: msrresrchvc
+  resource_group: gcr-singularity-resrch
+  # workspace_name: Workspace_NLC
+  workspace_name: NLC_Workspace
+
+# target:
+#   service: sing
+#   name: msroctobasicvc
+#   resource_group: gcr-singularity-octo
+#   # workspace_name: Workspace_NLC
+#   workspace_name: NLC_Workspace
+
+# target:
+#   service: sing
+#   name: msrresrchbasicvc
+#   resource_group: gcr-singularity
+#   # workspace_name: Workspace_NLC
+#   workspace_name: NLC_Workspace
+
+
+# environment:
+#   image: nvcr:v23.10
+#   registry: shumingdocker.azurecr.io
+#   setup:
+#   - echo "master_addr:" "$$MASTER_ADDR"
+#   - echo "master_port:" $$MASTER_PORT
+#   - echo "node_rank:" $$OMPI_COMM_WORLD_RANK
+#   username: shumingdocker
+
+environment:
+  # image: hangbo/pytorch-2.23dev:xformers
+  # image: hangbo/pytorch-2.23dev:xformers_s2
+  image: amlt-sing/acpt-2.3.1-py3.10-cuda12.1
+  setup:
+  - echo "master_addr:" "$$MASTER_ADDR"
+  - echo "master_port:" $$MASTER_PORT
+  - echo "node_rank:" $$OMPI_COMM_WORLD_RANK
+
+
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR/../..
+
+
+storage:
+  qilongma:
+    storage_account_name: msranlpintern
+    container_name: qilongma
+#   msranlp:
+#     storage_account_name: msranlp
+#     container_name: unilm
+#   nlcredstone:
+#     storage_account_name: nlcredstone
+#     container_name: unilm
+#   conversationhub:
+#     storage_account_name: conversationhub
+#     container_name: unilm
+#   conversationhubhot:
+#     storage_account_name: conversationhubhot
+#     container_name: tengchaolv
+
+
+# list of jobs to run, we run 2 jobs in this example
+# jobs:
+# - name: high_lr
+#   sku: G1
+#   command:
+#   - python main.py --lr 0.5
+# - name: low_lr
+#   sku: G1
+#   command:
+#   - python main.py --lr 0.1
+
+
+search:
+  job_template:
+    name: zhanka_resrchvc
+    sku: 1x80G4
+    # sku: 2x40G8-A100-IB-NvLink
+    identity: managed
+    sla_tier: Premium
+    priority: High
+    mpi: True
+    process_count_per_node: 1
+    command:
+      - echo $${rank}
+      # - export CUDA_VISIBLE_DEVICES=0,1,2,3
+      - export AMLT_OUTPUT_DIR=/mnt/qilongma/amlt_output/ql-job
+      - ls /mnt/qilongma
+      - sudo apt-get update
+      - sudo apt-get install -y cron vim htop gpustat
+      - curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+      - pip install -r requirements.txt
+      - sleep infinity
+    submit_args:
+      env:
+        {"SINGULARITY_MPI_ENV":"-mca pml ucx --mca btl ^vader,tcp,openib -x NCCL_SOCKET_IFNAME=bond0 -x NCCL_IB_HCA=mlx5_0,mlx5_3,mlx5_4,mlx5_5,mlx5_6,mlx5_9,mlx5_10,mlx5_11 -x NCCL_DEBUG=INFO",
+        "SHARED_MEMORY_PERCENT":0.5}
+    # tags: [Project_Name:1.58-bit-LLMs, ProjectID:PRJ-0349-A54, Experiment:BitNet-scaling]
+
+  type: grid
+  max_trials: 500
+  params:
+    - name: rank
+      spec: discrete
+      values: ['1']
+

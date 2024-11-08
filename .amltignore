@@ -1,0 +1,11 @@
+dataset/
+datasets/
+
+ckpt/
+
+latex2sympy/
+
+reports/
+
+*.json
+*.jsonl
