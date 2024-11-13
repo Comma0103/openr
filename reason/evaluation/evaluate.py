@@ -79,7 +79,7 @@ if __name__ == "__main__":
         prm_step_tag = "\n\n\n\n\n "
     prm_format_str = "{question} {answer}"
 
-    if "qwen" in config.LM.lower():
+    if "qwen" in config.LM.lower() or "llama" in config.LM.lower():
         lm_step_tag = "\n\n"
     else:
         lm_step_tag = "ки\n"

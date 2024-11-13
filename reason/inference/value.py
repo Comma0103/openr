@@ -26,6 +26,14 @@ def _value_inference_fastchat(
         json=gen_params,
         stream=True,
     )
-    results = response.json()
+    if response.status_code == 200:
+        try:
+            results = response.json()
+        except requests.exceptions.JSONDecodeError:
+            print(f"JSON decode error: Response content: {response.content}")
+            # Handle error as needed, e.g., return a default value or raise an error
+    else:
+        print(f"Error: Received status code {response.status_code} with content: {response.content}")
+        # Handle non-200 status here
     value = results["value"]
     return value

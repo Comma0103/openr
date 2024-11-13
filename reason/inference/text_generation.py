@@ -35,6 +35,7 @@ def _generate_fastchat(
         controller_addr + "/get_worker_address", json={"model": model_name}
     )
     worker_addr = ret.json()["address"]
+    print("worker_addr: ========= ", worker_addr)
     if not worker_addr:
         raise ValueError("Language Model name {} does not exist.".format(model_name))
 
@@ -58,7 +59,16 @@ def _generate_fastchat(
         json=gen_params,
         stream=True,
     )
-    results = response.json()
+    if response.status_code == 200:
+        try:
+            results = response.json()
+        except requests.exceptions.JSONDecodeError:
+            print(f"JSON decode error: Response content: {response.content}")
+            # Handle error as needed, e.g., return a default value or raise an error
+    else:
+        print(f"Error: Received status code {response.status_code} with content: {response.content}")
+        # Handle non-200 status here
+
     output_token_lens = results["output_token_len"]
     cum_logps = results["cumulative_logprob"]
     avg_len_logps = [

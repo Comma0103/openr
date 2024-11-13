@@ -38,7 +38,7 @@ logger = build_logger("reward_model_worker", f"reward_model_worker_{worker_id}.l
 
 
 def get_infer_fn(model_path):
-    if "qwen" in model_path.lower():
+    if "qwen" in model_path.lower() or "llama" in model_path.lower():
         return _qwen_math_infer_fn
     elif "math-shepherd" in model_path.lower().replace("_", "-"):
         return _math_shepherd_infer_fn
