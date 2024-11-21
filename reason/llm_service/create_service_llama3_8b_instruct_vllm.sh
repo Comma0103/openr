@@ -10,15 +10,17 @@ PYTHON_EXECUTABLE=$(which python3)
 MODEL_BASE=/home/shaohanh/qilongma/blob/public_models
 CUDA_DEVICE_BASE=0
 POLICY_MODEL_NAME=Meta-Llama-3-8B-Instruct
-VALUE_MODEL_NAME=llama3_prm_checkpoint-6358
+# VALUE_MODEL_NAME=qwen_prm/checkpoint-6898/
 # VALUE_MODEL_NAME=Qwen/Qwen2.5-Math-7B-PRM
+# VALUE_MODEL_NAME=peiyi9979/math-shepherd-mistral-7b-prm
+VALUE_MODEL_NAME=llama3_prm_checkpoint-6358
 MODEL_PATH=$MODEL_BASE/$POLICY_MODEL_NAME
 VALUE_MODEL_PATH=$MODEL_BASE/$VALUE_MODEL_NAME
 
 LOGDIR=logs_fastchat
 
 tmux start-server
-tmux kill-session -t FastChat
+# tmux kill-session -t FastChat
 tmux new-session -s FastChat -n controller -d
 tmux send-keys "export LOGDIR=${LOGDIR}" Enter
 tmux send-keys "$PYTHON_EXECUTABLE -m fastchat.serve.controller --port ${CONTROLER_PORT} --host $HOST_ADDR" Enter
@@ -35,7 +37,7 @@ do
   WORKER_PORT=$((WORKER_BASE_PORT+i))
   tmux new-window -n policy_worker_$i
   tmux send-keys "export LOGDIR=${LOGDIR}" Enter
-  tmux send-keys "CUDA_VISIBLE_DEVICES=$((i+CUDA_DEVICE_BASE)) $PYTHON_EXECUTABLE -m reason.llm_service.workers.model_worker --model-path $MODEL_PATH --controller-address http://$HOST_ADDR:$CONTROLER_PORT --host $HOST_ADDR --port $WORKER_PORT --worker-address http://$HOST_ADDR:$WORKER_PORT --dtype bfloat16" Enter
+  tmux send-keys "CUDA_VISIBLE_DEVICES=$((i+CUDA_DEVICE_BASE)) $PYTHON_EXECUTABLE -m reason.llm_service.workers.vllm_worker --model-path $MODEL_PATH --controller-address http://$HOST_ADDR:$CONTROLER_PORT --host $HOST_ADDR --port $WORKER_PORT --worker-address http://$HOST_ADDR:$WORKER_PORT --dtype bfloat16" Enter
 done
 
 

@@ -9,6 +9,7 @@ import json
 import os
 from typing import List, Optional
 import uuid
+from datetime import datetime
 
 import torch
 import torch.nn.functional as F
@@ -32,8 +33,9 @@ from fastchat.utils import (
     str_to_torch_dtype,
 )
 
-worker_id = str(uuid.uuid4())[:8]
-logger = build_logger("model_worker", f"model_worker_{worker_id}.log")
+worker_id = str(uuid.uuid4())[:4]
+datetime_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+logger = build_logger("model_worker", f"model_worker_{datetime_str}_{worker_id}.log")
 
 
 class ModelWorker(BaseModelWorker):
@@ -323,7 +325,7 @@ def create_model_worker():
     parser.add_argument(
         "--controller-address", type=str, default="http://localhost:21001"
     )
-    add_model_args(parser)
+    add_model_args(parser) # --model-path, --device(cuda), --gpus(None), --num-gpus(1), --max-gpu-memory, --dtype(float16), --load-8bit(store_true)
     parser.add_argument(
         "--model-names",
         type=lambda s: s.split(","),

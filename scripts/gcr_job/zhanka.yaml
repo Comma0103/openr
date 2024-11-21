@@ -92,7 +92,7 @@ storage:
 search:
   job_template:
     name: zhanka_resrchvc
-    sku: 1x80G4
+    sku: 1x80G4-A100-NvLink
     # sku: 2x40G8-A100-IB-NvLink
     identity: managed
     sla_tier: Premium

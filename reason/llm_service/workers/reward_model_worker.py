@@ -9,6 +9,8 @@ import json
 import os
 from typing import List, Optional
 import uuid
+from datetime import datetime
+
 import functools
 import torch
 import torch.nn.functional as F
@@ -33,8 +35,9 @@ from fastchat.utils import (
 )
 from prm.infer_fns import _qwen_math_infer_fn, _math_shepherd_infer_fn
 
-worker_id = str(uuid.uuid4())[:8]
-logger = build_logger("reward_model_worker", f"reward_model_worker_{worker_id}.log")
+worker_id = str(uuid.uuid4())[:4]
+datetime_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+logger = build_logger("reward_model_worker", f"reward_model_worker_{datetime_str}_{worker_id}.log")
 
 
 def get_infer_fn(model_path):

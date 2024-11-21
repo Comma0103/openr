@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from transformers import AutoTokenizer, AutoModelForCausalLM, Trainer, TrainingArguments
 import torch
 from datasets import load_dataset
@@ -17,14 +19,15 @@ from datasets import concatenate_datasets
 import random
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_path", type=str, default="Qwen/Qwen2.5-Math-7B-Instruct")
+# parser.add_argument("--model_path", type=str, default="Qwen/Qwen2.5-Math-7B-Instruct")
+parser.add_argument("--model_path", type=str, default="/home/shaohanh/qilongma/blob/public_models/Qwen2.5-Math-7B-Instruct")
 parser.add_argument("--data_path", type=str, default="../../datasets")
-parser.add_argument("--per_device_train_batch_size", type=int, default=4)
-parser.add_argument("--per_device_eval_batch_size", type=int, default=4)
-parser.add_argument("--total_batch_size", type=int, default=256)
-parser.add_argument("--learning_rate", type=float, default=1e-4)
-parser.add_argument("--datasets", type=str, default='all')
-parser.add_argument("--server", type=str, default='1')
+parser.add_argument("--per_device_train_batch_size", "--devtrbs", type=int, default=4)
+parser.add_argument("--per_device_eval_batch_size", "--devevbs", type=int, default=4)
+parser.add_argument("--total_batch_size","--totbs", type=int, default=256)
+parser.add_argument("--learning_rate", "--lr", type=float, default=1e-4)
+parser.add_argument("--datasets", type=str, default='prm800k')
+parser.add_argument("--server", type=str, default='477')
 
 
 args = parser.parse_args()
@@ -44,35 +47,37 @@ tokenizer = AutoTokenizer.from_pretrained(
     add_eos_token=False, 
 )
 
-print(tokenizer.encode('a ки b'))
-print(tokenizer.encode('a b'))
+print(tokenizer.encode('a ки b')) # [64, 7665, 1802, 293]
+print(tokenizer.encode('a b')) # [64, 293]
 
-print(tokenizer.encode('a \n\n b'))
-print(tokenizer.encode('a b'))
-print(tokenizer.encode('a \n\n\n\n\n\n b'))
-print(tokenizer.encode('a b'))
-
-
-print(tokenizer.encode('a \n\n\n\n\n\n\n b'))
-print(tokenizer.encode('a b'))
-
-print(tokenizer.encode('a \n\n\n\n\n\n\n\n b'))
-print(tokenizer.encode('a b'))
+print(tokenizer.encode('a \n\n b')) # [64, 4710, 293]
+print(tokenizer.encode('a b')) # [64, 293]
+print(tokenizer.encode('a \n\n\n\n\n b')) # [64, 76325, 293]
+print(tokenizer.encode('a b')) # [64, 293]
+print(tokenizer.encode('a \n\n\n\n\n\n b')) # [64, 220, 5134, 293]
+print(tokenizer.encode('a b')) # [64, 293]
 
 
-print(tokenizer.encode('a + b'))
-print(tokenizer.encode('a b'))
+print(tokenizer.encode('a \n\n\n\n\n\n\n b')) # [64, 22701, 1406, 293]
+print(tokenizer.encode('a b')) # [64, 293]
 
-print(tokenizer.encode('a - b'))
-print(tokenizer.encode('a b'))
+print(tokenizer.encode('a \n\n\n\n\n\n\n\n b')) # [64, 220, 5959, 293]
+print(tokenizer.encode('a b')) # [64, 293]
 
-print(tokenizer.encode(' + -'))
-print(tokenizer.encode('+-'))
+
+print(tokenizer.encode('a + b')) # [64, 488, 293]
+print(tokenizer.encode('a b')) # [64, 293]
+
+print(tokenizer.encode('a - b')) # [64, 481, 293]
+print(tokenizer.encode('a b')) # [64, 293]
+
+print(tokenizer.encode(' + -')) # [488, 481]
+print(tokenizer.encode('+-')) # [21473]
 
 
 # if USE_8bit is True:
 #     model = prepare_model_for_int8_training(model)
-print(tokenizer.eos_token_id)
+print(tokenizer.eos_token_id) # 151645
 
 tokenizer.pad_token_id = 0  # unk. we want this to be different from the eos token
 tokenizer.padding_side = "left"  # Allow batched inference
@@ -82,6 +87,7 @@ tokenizer.padding_side = "left"  # Allow batched inference
 candidate_tokens = tokenizer.encode(f" {good_token} {bad_token}") # [488, 481]
 print(candidate_tokens)
 step_tag_id = tokenizer.encode(f" {step_tag}")[-1] # 76325
+print(step_tag_id)
 print('step_tag_id:',tokenizer.encode(f" {step_tag}"))
 print('step_tag_id2:',tokenizer.encode(f"{step_tag2}"))
 # model = AutoModelForCausalLM.from_pretrained('peiyi9979/math-shepherd-mistral-7b-prm').eval()
@@ -90,10 +96,12 @@ model = AutoModelForCausalLM.from_pretrained(
     model_path,
     # load_in_8bit=True,   # Enables 8-bit quantization
     # device_map="auto",   # Automatically assigns the model to available GPUs/CPUs
-    # torch_dtype=torch.float16,  # Mixed precision for faster inference
-    torch_dtype=torch.bfloat16,
+    torch_dtype=torch.bfloat16,  # Mixed precision for faster inference
     attn_implementation="flash_attention_2",
+    low_cpu_mem_usage=True,
 )
+
+model.gradient_checkpointing_enable()
 
 # for name,param in model.named_parameters():
 #     print(name)
@@ -111,9 +119,31 @@ model = get_peft_model(model, lora_config)
 
 # model.to('cuda:0')
 print(model.device)
+
 question = "Janet\u2019s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?"
-output1 = "Step 1: Janet's ducks lay 16 eggs per day. ки\nStep 2: She eats three for breakfast every morning, so she has 16 - 3 = 13 eggs left. ки\nStep 3: She bakes muffins for her friends every day with four eggs, so she has 13 - 4 = 9 eggs left. ки\nStep 4: She sells the remainder at the farmers' market daily for $2 per fresh duck egg, so she makes 9 * $2 = $18 every day at the farmers' market. The answer is: 18 ки" # 18 is right
-output2 = "Step 1: Janet's ducks lay 16 eggs per day. ки\nStep 2: She eats three for breakfast every morning, so she has 16 - 3 = 13 eggs left. ки\nStep 3: She bakes muffins for her friends every day with four eggs, so she has 13 - 4 = 9 eggs left. ки\nStep 4: She sells the remainder at the farmers' market daily for $2 per fresh duck egg, so she makes 9 * $2 = $17 every day at the farmers' market. The answer is: 17 ки" # 17 is wrong
+output1 = f"Step 1: Janet's ducks lay 16 eggs per day. {step_tag} Step 2: She eats three for breakfast every morning, so she has 16 - 3 = 13 eggs left. {step_tag} Step 3: She bakes muffins for her friends every day with four eggs, so she has 13 - 4 = 9 eggs left. {step_tag} Step 4: She sells the remainder at the farmers' market daily for $2 per fresh duck egg, so she makes 9 * $2 = $18 every day at the farmers' market. The answer is: 18 {step_tag}" # 18 is right
+output2 = f"Step 1: Janet's ducks lay 16 eggs per day. {step_tag} Step 2: She eats three for breakfast every morning, so she has 16 - 3 = 13 eggs left. {step_tag} Step 3: She bakes muffins for her friends every day with four eggs, so she has 13 - 4 = 9 eggs left. {step_tag} Step 4: She sells the remainder at the farmers' market daily for $2 per fresh duck egg, so she makes 9 * $2 = $17 every day at the farmers' market. The answer is: 17 {step_tag}" # 17 is wrong
+
+# for output in [output1,output2]:
+# # for output in [output1, output2,output3]:
+#     input_for_prm = f"{question} {output}"
+#     input_id = torch.tensor([tokenizer.encode(input_for_prm)])
+#     # print(input_id)
+
+#     with torch.no_grad():
+#         logits = model(input_id).logits[:,:,candidate_tokens]
+#         # print(logits)
+#         scores = logits.softmax(dim=-1)[:,:,0] # prob of being '+'
+#         # print(scores)
+#         step_scores = scores[input_id == step_tag_id]
+        
+#         print(step_scores)
+#         print('aaaaaa')        
+# # tensor([0.4648, 0.4805, 0.4609, 0.4453])
+# # tensor([0.4648, 0.4805, 0.4609, 0.4043])
+
+# exit(0)
+
 def preprocess_function(example):
     input = f"{example['question']} {example['process']}"
     tokenized_inputs = tokenizer(
@@ -155,10 +185,14 @@ def preprocess_function(example):
 DATA_PATH = {
     # "train": 'multi-step.json', 
     # 'train': 'test.json',
-    "test": os.path.join(args.data_path, 'prm800k_test.json'),
-    "train": os.path.join(args.data_path, "math_aps.json"),
-    # "train": "../../datasets/processed_data/prm800k/data/phase2_train_new.jsonl",
-    # "test": "../../datasets/prm800k-main/prm800k/data/phase2_test_new.jsonl",
+    # "test": os.path.join(args.data_path, 'prm800k_test.json'),
+    # "train": os.path.join(args.data_path, "processed_data/MATH-APS/math_aps.json"),
+    # "train": os.path.join(args.data_path, "processed_data/prm800k/phase2_train.preprocessed.json"),
+    # "test": os.path.join(args.data_path, "processed_data/prm800k/phase2_test.preprocessed.json"),
+    "train": [os.path.join(args.data_path, "processed_data/prm800k/phase1_train.preprocessed.json"), 
+              os.path.join(args.data_path, "processed_data/prm800k/phase2_train.preprocessed.json")], 
+    "test": [os.path.join(args.data_path, "processed_data/prm800k/phase1_test.preprocessed.json"), 
+              os.path.join(args.data_path, "processed_data/prm800k/phase2_test.preprocessed.json")], 
     
 }
 
@@ -181,12 +215,10 @@ elif args.datasets == 'aps_shepherd':
     dataset3 = load_dataset('json',data_files=os.path.join(args.data_path, "math_shepherd.json"))
     dataset['train'] = concatenate_datasets([dataset['train'],dataset3['train']])
 
-
-
 # dataset['train'] = dataset['train'].select(range(200000,201000))
 # dataset['test'] = dataset['test'].select(range(1000))
 
-print('start processing')
+print('start processing') # tokenize
 tokenized_datasets = dataset.map(preprocess_function)
 tokenized_datasets['train'] = tokenized_datasets['train'].remove_columns(['question','process','label'])
 
@@ -211,26 +243,31 @@ if ddp:
 print(world_size)
 print(ddp)
 
-
+prm_name = f'prm_qwen2.5_math_7b_instruct.{args.server}'
 fp = f'bs_{args.total_batch_size}_lr_{args.learning_rate}_datasets_{args.datasets}'
-output_path = f'./prm_results_qwen_new.{args.server}/{fp}'
+datetime_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+output_path = f'../ckpt/{prm_name}/{fp}/{datetime_str}'
 
 
 # Training arguments
 training_args = TrainingArguments(
     output_dir=output_path,
-    evaluation_strategy="no",  # Evaluate at the end of each epoch
+    eval_strategy="no",  # Evaluate at the end of each epoch
+    eval_steps=0.1,
     learning_rate=args.learning_rate,
     per_device_train_batch_size=args.per_device_train_batch_size,
     per_device_eval_batch_size=args.per_device_eval_batch_size,
     gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-    num_train_epochs=3,
+    num_train_epochs=2,
     weight_decay=0.01,
-    logging_dir="./logs",
+    logging_dir=f"{output_path}/logs",
+    log_level="info",
     logging_steps=10,
-    save_strategy="epoch",
-    # fp16=True,  # Enable mixed precision for better performance on supported hardware
-    bf16=True,
+    logging_first_step=True,
+    logging_nan_inf_filter=False,
+    save_strategy="steps",
+    save_steps=0.25,
+    bf16=True,  # Enable mixed precision for better performance on supported hardware
     report_to="none",  # Set to "wandb" if you are using Weights and Biases for logging
     dataloader_num_workers=4,
     deepspeed=None,
@@ -281,25 +318,24 @@ trainer.train()
 # trainer.evaluate()
 
 # Save the fine-tuned model and tokenizer
-model.save_pretrained('./fine_tuned_math_shepherd_lora_8bit')
-tokenizer.save_pretrained('./fine_tuned_math_shepherd_lora_8bit')
+model.save_pretrained(f'../ckpt/{prm_name}/fine_tuned_math_shepherd_mix_lora_16bit')
+tokenizer.save_pretrained(f'../ckpt/{prm_name}/fine_tuned_math_shepherd_mix_lora_16bit')
 
 
+# for output in [output1,output2]:
+# # for output in [output1, output2,output3]:
+#     input_for_prm = f"{question} {output}"
+#     input_id = torch.tensor([tokenizer.encode(input_for_prm)])
+#     # print(input_id)
 
-for output in [output1,output2]:
-# for output in [output1, output2,output3]:
-    input_for_prm = f"{question} {output}"
-    input_id = torch.tensor([tokenizer.encode(input_for_prm)])
-    # print(input_id)
-
-    with torch.no_grad():
-        logits = model(input_id).logits[:,:,candidate_tokens]
-        # print(logits)
-        scores = logits.softmax(dim=-1)[:,:,0] 
-        # print(scores)
-        step_scores = scores[input_id == step_tag_id]
+#     with torch.no_grad():
+#         logits = model(input_id).logits[:,:,candidate_tokens]
+#         # print(logits)
+#         scores = logits.softmax(dim=-1)[:,:,0] 
+#         # print(scores)
+#         step_scores = scores[input_id == step_tag_id]
         
-        print(step_scores)
-        print('aaaaaa')        
-# tensor([0.9955, 0.9958, 0.9983, 0.9957])
-# tensor([0.9955, 0.9958, 0.9983, 0.0240])
+#         print(step_scores)
+#         print('aaaaaa')        
+# # tensor([?, ?, ?, ?])
+# # tensor([?, ?, ?, ?])

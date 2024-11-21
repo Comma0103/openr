@@ -6,7 +6,7 @@ import argparse
 from peft import PeftModel, PeftConfig
 from peft import get_peft_model, LoraConfig, TaskType
 # Ensure bitsandbytes is available for 8-bit quantization
-import bitsandbytes as bnb
+# import bitsandbytes as bnb
 from sklearn.metrics import roc_auc_score, log_loss, accuracy_score
 
 from torch.nn import BCEWithLogitsLoss
@@ -52,7 +52,7 @@ print('step_tag_id:',tokenizer.encode(f"{step_tag}"))
 # model = AutoModelForCausalLM.from_pretrained(model_path).eval()
 model = AutoModelForCausalLM.from_pretrained(
     model_path,
-    load_in_8bit=True,   # Enables 8-bit quantization
+    # load_in_8bit=True,   # Enables 8-bit quantization
     device_map="auto",   # Automatically assigns the model to available GPUs/CPUs
     torch_dtype=torch.float16  # Mixed precision for faster inference
 )
