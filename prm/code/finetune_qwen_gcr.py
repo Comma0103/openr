@@ -245,7 +245,7 @@ print(ddp)
 prm_name = f'prm_qwen2.5_math_7b_instruct.{args.server}'
 fp = f'bs_{args.total_batch_size}_lr_{args.learning_rate}_datasets_{args.datasets}'
 datetime_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-output_path = f'../ckpt/{prm_name}/{fp}/{datetime_str}'
+output_path = f'/mnt/qilongma/test_time_compute_data/ckpt/{prm_name}/{fp}/{datetime_str}'
 
 
 # Training arguments
@@ -317,8 +317,8 @@ trainer.train()
 # trainer.evaluate()
 
 # Save the fine-tuned model and tokenizer
-model.save_pretrained(f'../ckpt/{prm_name}/fine_tuned_math_shepherd_mix_lora_16bit')
-tokenizer.save_pretrained(f'../ckpt/{prm_name}/fine_tuned_math_shepherd_mix_lora_16bit')
+model.save_pretrained(f'/mnt/qilongma/test_time_compute_data/ckpt/{prm_name}/fine_tuned_math_shepherd_mix_lora_16bit')
+tokenizer.save_pretrained(f'/mnt/qilongma/test_time_compute_data/ckpt/{prm_name}/fine_tuned_math_shepherd_mix_lora_16bit')
 
 
 # for output in [output1,output2]:

@@ -4,7 +4,7 @@ transformers>=4.44.2
 dm-env
 dm-tree
 fastchat
-deepspeed
+deepspeed==0.15.4
 jsonlines
 peft
 torchtyping
