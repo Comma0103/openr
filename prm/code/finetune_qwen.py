@@ -90,6 +90,8 @@ step_tag_id = tokenizer.encode(f" {step_tag}")[-1] # 76325
 print(step_tag_id)
 print('step_tag_id:',tokenizer.encode(f" {step_tag}"))
 print('step_tag_id2:',tokenizer.encode(f"{step_tag2}"))
+
+
 # model = AutoModelForCausalLM.from_pretrained('peiyi9979/math-shepherd-mistral-7b-prm').eval()
 # model = AutoModelForCausalLM.from_pretrained(model_path).eval()
 model = AutoModelForCausalLM.from_pretrained(
@@ -143,6 +145,7 @@ output2 = f"Step 1: Janet's ducks lay 16 eggs per day. {step_tag} Step 2: She ea
 # # tensor([0.4648, 0.4805, 0.4609, 0.4043])
 
 # exit(0)
+
 
 def preprocess_function(example):
     input = f"{example['question']} {example['process']}"

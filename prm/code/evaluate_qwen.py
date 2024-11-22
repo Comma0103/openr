@@ -79,6 +79,8 @@ print(candidate_tokens)
 step_tag_id = tokenizer.encode(f" {step_tag}")[-1] # 76325
 print('step_tag_id:',tokenizer.encode(f" {step_tag}"))
 print('step_tag_id2:',tokenizer.encode(f"{step_tag2}"))
+
+
 # model = AutoModelForCausalLM.from_pretrained('peiyi9979/math-shepherd-mistral-7b-prm').eval()
 # model = AutoModelForCausalLM.from_pretrained(model_path).eval()
 model = AutoModelForCausalLM.from_pretrained(
@@ -106,7 +108,8 @@ print(model)
 
 # adapter_path = './prm_results_qwen_new/bs_256_lr_0.0001/checkpoint-6898'
 # adapter_path = "/home/shaohanh/qilongma/blob/public_models/Math-psa/checkpoint-2127"
-adapter_path = "/home/shaohanh/qilongma/openr/prm/ckpt/prm_qwen2.5_math_7b_instruct.1/bs_256_lr_0.0001_datasets_prm800k/20241119_043500/checkpoint-20"
+# adapter_path = "/home/shaohanh/qilongma/openr/prm/ckpt/prm_qwen2.5_math_7b_instruct.477/bs_256_lr_0.0001_datasets_prm800k/20241119_043500/checkpoint-20"
+adapter_path = "/home/shaohanh/qilongma/blob/test_time_compute_data/ckpt/prm_qwen2.5_math_7b_instruct.gcr/bs_256_lr_0.0001_datasets_prm800k/20241121_050817/checkpoint-2385"
 adapter_config = PeftConfig.from_pretrained(adapter_path)
 
 # Wrap the pre-trained model with the LoRA fine-tuned weights
