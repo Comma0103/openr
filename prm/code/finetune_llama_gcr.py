@@ -73,7 +73,7 @@ print(tokenizer.encode('+-'))
 
 # if USE_8bit is True:
 #     model = prepare_model_for_int8_training(model)
-print(tokenizer.eos_token_id) # 128001
+print(tokenizer.eos_token_id) # 128009
 
 tokenizer.pad_token_id = 0  # unk. we want this to be different from the eos token
 tokenizer.padding_side = "left"  # Allow batched inference
@@ -118,25 +118,25 @@ question = "Janet\u2019s ducks lay 16 eggs per day. She eats three for breakfast
 output1 = f"Step 1: Janet's ducks lay 16 eggs per day. {step_tag} Step 2: She eats three for breakfast every morning, so she has 16 - 3 = 13 eggs left. {step_tag} Step 3: She bakes muffins for her friends every day with four eggs, so she has 13 - 4 = 9 eggs left. {step_tag} Step 4: She sells the remainder at the farmers' market daily for $2 per fresh duck egg, so she makes 9 * $2 = $18 every day at the farmers' market. The answer is: 18 {step_tag}" # 18 is right
 output2 = f"Step 1: Janet's ducks lay 16 eggs per day. {step_tag} Step 2: She eats three for breakfast every morning, so she has 16 - 3 = 13 eggs left. {step_tag} Step 3: She bakes muffins for her friends every day with four eggs, so she has 13 - 4 = 9 eggs left. {step_tag} Step 4: She sells the remainder at the farmers' market daily for $2 per fresh duck egg, so she makes 9 * $2 = $17 every day at the farmers' market. The answer is: 17 {step_tag}" # 17 is wrong
 
-for output in [output1,output2]:
-# for output in [output1, output2,output3]:
-    input_for_prm = f"{question} {output}"
-    input_id = torch.tensor([tokenizer.encode(input_for_prm)])
-    # print(input_id)
+# for output in [output1,output2]:
+# # for output in [output1, output2,output3]:
+#     input_for_prm = f"{question} {output}"
+#     input_id = torch.tensor([tokenizer.encode(input_for_prm)])
+#     # print(input_id)
 
-    with torch.no_grad():
-        logits = model(input_id).logits[:,:,candidate_tokens]
-        # print(logits)
-        scores = logits.softmax(dim=-1)[:,:,0] # prob of being '+'
-        # print(scores)
-        step_scores = scores[input_id == step_tag_id]
+#     with torch.no_grad():
+#         logits = model(input_id).logits[:,:,candidate_tokens]
+#         # print(logits)
+#         scores = logits.softmax(dim=-1)[:,:,0] # prob of being '+'
+#         # print(scores)
+#         step_scores = scores[input_id == step_tag_id]
         
-        print(step_scores)
-        print('aaaaaa')        
-# tensor([0.1562, 0.3555, 0.3340, 0.0284])
-# tensor([0.1562, 0.3555, 0.3340, 0.0320])
+#         print(step_scores)
+#         print('aaaaaa')        
+# # tensor([0.1729, 0.6914, 0.4219, 0.0152])
+# # tensor([0.1729, 0.6914, 0.4219, 0.0152])
 
-exit(0)
+# exit(0)
 
 
 def preprocess_function(example):

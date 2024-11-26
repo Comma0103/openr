@@ -73,7 +73,7 @@ print(tokenizer.encode('+-'))
 
 # if USE_8bit is True:
 #     model = prepare_model_for_int8_training(model)
-print(tokenizer.eos_token_id) # 128001
+print(tokenizer.eos_token_id) # 128009
 
 tokenizer.pad_token_id = 0  # unk. we want this to be different from the eos token
 tokenizer.padding_side = "left"  # Allow batched inference
@@ -133,8 +133,8 @@ for output in [output1,output2]:
         
         print(step_scores)
         print('aaaaaa')        
-# tensor([0.1562, 0.3555, 0.3340, 0.0284])
-# tensor([0.1562, 0.3555, 0.3340, 0.0320])
+# tensor([0.1729, 0.6914, 0.4219, 0.0152])
+# tensor([0.1729, 0.6914, 0.4219, 0.0152])
 
 exit(0)
 
