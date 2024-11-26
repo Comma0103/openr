@@ -91,11 +91,11 @@ storage:
 
 search:
   job_template:
-    name: zhanka_resrchvc
+    name: zhanka_resrchvc_2
     sku: 1x80G4-A100-NvLink
     # sku: 2x40G8-A100-IB-NvLink
     identity: managed
-    sla_tier: Premium
+    sla_tier: Standard
     priority: High
     mpi: True
     process_count_per_node: 1
