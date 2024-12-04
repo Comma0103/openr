@@ -182,15 +182,15 @@ def preprocess_function(example):
 DATA_PATH = {
     # "train": 'multi-step.json', 
     # 'train': 'test.json',
-    # "test": os.path.join(args.data_path, 'prm800k_test.json'),
-    # "train": os.path.join(args.data_path, "processed_data/MATH-APS/math_aps.json"),
+    # "test": os.path.join(args.data_path, 'processed_data/prm800k_test.json'), # ori
+    # "train": [os.path.join(args.data_path, "processed_data/MATH-APS/math_aps.json"), # ori
+    #           os.path.join(args.data_path, 'processed_data/prm800k_train.json')], # ori
     # "train": os.path.join(args.data_path, "processed_data/prm800k/phase2_train.preprocessed.json"),
     # "test": os.path.join(args.data_path, "processed_data/prm800k/phase2_test.preprocessed.json"),
     "train": [os.path.join(args.data_path, "processed_data/prm800k/phase1_train.preprocessed.json"), 
               os.path.join(args.data_path, "processed_data/prm800k/phase2_train.preprocessed.json")], 
     "test": [os.path.join(args.data_path, "processed_data/prm800k/phase1_test.preprocessed.json"), 
               os.path.join(args.data_path, "processed_data/prm800k/phase2_test.preprocessed.json")], 
-    
 }
 
 dataset = load_dataset('json', data_files=DATA_PATH)
@@ -324,7 +324,7 @@ trainer = Trainer(
     train_dataset=tokenized_datasets['train'],
     eval_dataset=tokenized_datasets['test'],  # Replace with a validation set if available
     data_collator=data_collator,
-    tokenizer=tokenizer,
+    processing_class=tokenizer,
     preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
 )
@@ -335,7 +335,6 @@ trainer.train()
 # Save the fine-tuned model and tokenizer
 model.save_pretrained(f'../ckpt/{prm_name}/fine_tuned_math_shepherd_mix_lora_16bit')
 tokenizer.save_pretrained(f'../ckpt/{prm_name}/fine_tuned_math_shepherd_mix_lora_16bit')
-
 
 # for output in [output1,output2]:
 # # for output in [output1, output2,output3]:
