@@ -16,14 +16,14 @@ from datasets import concatenate_datasets
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_path", type=str, default="/home/shaohanh/qilongma/blob/public_models/Meta-Llama-3.1-8B-Instruct")
-parser.add_argument("--data_path", type=str, default="../../datasets")
+parser.add_argument("--model_path", type=str, default="/mnt/qilongma/public_models/Meta-Llama-3.1-8B-Instruct")
+parser.add_argument("--data_path", type=str, default="/mnt/qilongma/test_time_compute_data/datasets")
 parser.add_argument("--per_device_train_batch_size", "--devtrbs", type=int, default=4)
-parser.add_argument("--per_device_eval_batch_size", "--devevbs", type=int, default=8)
+parser.add_argument("--per_device_eval_batch_size", "--devevbs", type=int, default=16)
 parser.add_argument("--total_batch_size","--totbs", type=int, default=256)
 parser.add_argument("--learning_rate", "--lr", type=float, default=1e-4)
 parser.add_argument("--datasets", type=str, default='prm800k')
-parser.add_argument("--server", type=str, default='477')
+parser.add_argument("--server", type=str, default='gcr')
 args = parser.parse_args()
 
 
@@ -108,7 +108,7 @@ print(model)
 # model = get_peft_model(model, lora_config)
 
 # adapter_path = '../ckpt/prm_llama3_8b/bs_128_lr_0.0001/checkpoint-3179'
-adapter_path = "/home/shaohanh/qilongma/blob/test_time_compute_data/ckpt/prm_llama3.1_8b_instruct.gcr/bs_256_lr_0.0001_datasets_all/20241127_002406/checkpoint-4254"
+adapter_path = "/mnt/qilongma/test_time_compute_data/ckpt/prm_llama3.1_8b_instruct.gcr/bs_256_lr_0.0001_datasets_all/20241127_002406/checkpoint-4254"
 adapter_config = PeftConfig.from_pretrained(adapter_path)
 
 # Wrap the pre-trained model with the LoRA fine-tuned weights
@@ -300,8 +300,8 @@ with torch.no_grad():
     trainer.evaluate()
 
 # Save the fine-tuned model and tokenizer
-# model.save_pretrained('../ckpt/{prm_name}/fine_tuned_llama3_8b_mix_lora_16bit')
-# tokenizer.save_pretrained('../ckpt/{prm_name}/fine_tuned_llama3_8b_mix_lora_16bit')
+# model.save_pretrained('/mnt/qilongma/test_time_compute_data/ckpt/{prm_name}/fine_tuned_llama3_8b_mix_lora_16bit')
+# tokenizer.save_pretrained('/mnt/qilongma/test_time_compute_data/ckpt/{prm_name}/fine_tuned_llama3_8b_mix_lora_16bit')
 
 # for output in [output1,output2]:
 # # for output in [output1, output2,output3]:

@@ -95,7 +95,7 @@ search:
     sku: 1x80G4-A100-NvLink
     # sku: 2x40G8-A100-IB-NvLink
     identity: managed
-    sla_tier: Standard
+    sla_tier: Premium
     priority: High
     mpi: True
     process_count_per_node: 1

@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model_path", type=str, default="/home/shaohanh/qilongma/blob/public_models/Qwen2.5-Math-7B-Instruct")
 parser.add_argument("--data_path", type=str, default="../../datasets")
 parser.add_argument("--per_device_train_batch_size", "--devtrbs", type=int, default=4)
-parser.add_argument("--per_device_eval_batch_size", "--devevbs", type=int, default=4)
+parser.add_argument("--per_device_eval_batch_size", "--devevbs", type=int, default=8)
 parser.add_argument("--total_batch_size","--totbs", type=int, default=256)
 parser.add_argument("--learning_rate", "--lr", type=float, default=1e-4)
 parser.add_argument("--datasets", type=str, default='prm800k')
@@ -90,10 +90,11 @@ model = AutoModelForCausalLM.from_pretrained(
     model_path,
     # load_in_8bit=True,   # Enables 8-bit quantization
     device_map="auto",   # Automatically assigns the model to available GPUs/CPUs
-    # torch_dtype=torch.float16,  # Mixed precision for faster inference
-    torch_dtype=torch.bfloat16,
-    # attn_implementation="flash_attention_2",
+    torch_dtype=torch.bfloat16,  # Mixed precision for faster inference
+    attn_implementation="flash_attention_2",
+    low_cpu_mem_usage=True,
 )
+# model.gradient_checkpointing_enable()
 # for name,param in model.named_parameters():
 #     print(name)
 print(model)
@@ -120,6 +121,7 @@ print(adapter_path)
 # model.to('cuda:0')
 print(model.device)
 
+
 question = "Janet\u2019s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?"
 output1 = f"Step 1: Janet's ducks lay 16 eggs per day. {step_tag} Step 2: She eats three for breakfast every morning, so she has 16 - 3 = 13 eggs left. {step_tag} Step 3: She bakes muffins for her friends every day with four eggs, so she has 13 - 4 = 9 eggs left. {step_tag} Step 4: She sells the remainder at the farmers' market daily for $2 per fresh duck egg, so she makes 9 * $2 = $18 every day at the farmers' market. The answer is: 18 {step_tag}" # 18 is right
 output2 = f"Step 1: Janet's ducks lay 16 eggs per day. {step_tag} Step 2: She eats three for breakfast every morning, so she has 16 - 3 = 13 eggs left. {step_tag} Step 3: She bakes muffins for her friends every day with four eggs, so she has 13 - 4 = 9 eggs left. {step_tag} Step 4: She sells the remainder at the farmers' market daily for $2 per fresh duck egg, so she makes 9 * $2 = $17 every day at the farmers' market. The answer is: 17 {step_tag}" # 17 is wrong
@@ -139,10 +141,10 @@ for output in [output1,output2]:
         
         print(step_scores)
         print('aaaaaa')        
-# tensor([0.9688, 0.7969, 0.7969, 0.9141])
-# tensor([0.9688, 0.7969, 0.7969, 0.0374])
+# tensor([0.9609, 0.8359, 0.9258, 0.9258])
+# tensor([0.9609, 0.8359, 0.9258, 0.0420])
 
-exit(0)
+# exit(0)
 
 
 def preprocess_function(example):
@@ -183,24 +185,27 @@ def preprocess_function(example):
     
     return tokenized_inputs
 
+
 DATA_PATH = {
     # "train": 'multi-step.json', 
     # 'train': 'test.json',
-    "test": '../../datasets/processed_data/prm800k_test.json',
-    "train": "../../datasets/processed_data/math_aps.json",
-    # "train": "../../datasets/processed_data/prm800k/data/phase2_train_new.jsonl",
-    # "test": "../../datasets/prm800k-main/prm800k/data/phase2_test_new.jsonl",
-    
+    # "test": os.path.join(args.data_path, 'processed_data/prm800k_test.json'), # ori
+    # "train": [os.path.join(args.data_path, "processed_data/MATH-APS/math_aps.json"), # ori
+    #           os.path.join(args.data_path, 'processed_data/prm800k_train.json')], # ori
+    # "train": os.path.join(args.data_path, "processed_data/prm800k/phase2_train.preprocessed.json"),
+    # "test": os.path.join(args.data_path, "processed_data/prm800k/phase2_test.preprocessed.json"),
+    "train": [os.path.join(args.data_path, "processed_data/prm800k/phase1_train.preprocessed.json")], 
+            #   os.path.join(args.data_path, "processed_data/prm800k/phase2_train.preprocessed.json")], 
+    "test": [os.path.join(args.data_path, "processed_data/prm800k/phase1_test.preprocessed.json"), 
+              os.path.join(args.data_path, "processed_data/prm800k/phase2_test.preprocessed.json")], 
 }
-dataset2 = load_dataset('json',data_files="../../datasets/processed_data/prm800k_train.json")
 
 dataset = load_dataset('json', data_files=DATA_PATH)
-dataset['train'] = concatenate_datasets([dataset['train'], dataset2['train']])
 
-dataset['train'] = dataset['train'].select(range(10000))
+# dataset['train'] = dataset['train'].select(range(10000)) # ori
 # dataset['test'] = dataset['test'].select(range(1000))
 
-print('start processing')
+print('start processing') # tokenize
 tokenized_datasets = dataset.map(preprocess_function)
 tokenized_datasets['train'] = tokenized_datasets['train'].remove_columns(['question','process','label'])
 
@@ -213,38 +218,39 @@ print('dataset processed')
 # Data collator for padding inputs dynamically
 data_collator = DataCollatorWithPadding(tokenizer)
 
+
 BATCH_SIZE = args.total_batch_size
 GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // args.per_device_train_batch_size
 
 world_size = int(os.environ.get("WORLD_SIZE", 1))
 ddp = world_size != 1
 if ddp:
-    
     GRADIENT_ACCUMULATION_STEPS = GRADIENT_ACCUMULATION_STEPS // world_size
-
 print(world_size)
 print(ddp)
 
 
-fp = f'bs_{args.total_batch_size}_lr_{args.learning_rate}'
-output_path = f'./prm_results_qwen/{fp}'
+output_path = f'{adapter_path}/eval_results'
 
 
 # Training arguments
 training_args = TrainingArguments(
     output_dir=output_path,
-    evaluation_strategy="no",  # Evaluate at the end of each epoch
+    eval_strategy="epoch",  # Evaluate at the end of each epoch
     learning_rate=args.learning_rate,
     per_device_train_batch_size=args.per_device_train_batch_size,
     per_device_eval_batch_size=args.per_device_eval_batch_size,
     gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-    num_train_epochs=3,
+    num_train_epochs=2,
     weight_decay=0.01,
-    logging_dir="./logs",
+    logging_dir=f"{output_path}/logs",
+    log_level="info",
     logging_steps=10,
-    save_strategy="epoch",
-    # fp16=True,  # Enable mixed precision for better performance on supported hardware
-    bf16=True,
+    logging_first_step=True,
+    logging_nan_inf_filter=False,
+    save_strategy="no",
+    save_steps=0.25,
+    bf16=True,  # Enable mixed precision for better performance on supported hardware
     report_to="none",  # Set to "wandb" if you are using Weights and Biases for logging
     dataloader_num_workers=4,
     deepspeed=None,
@@ -286,7 +292,7 @@ trainer = Trainer(
     train_dataset=tokenized_datasets['train'],
     eval_dataset=tokenized_datasets['test'],  # Replace with a validation set if available
     data_collator=data_collator,
-    tokenizer=tokenizer,
+    processing_class=tokenizer,
     preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     compute_metrics=compute_metrics,
 )
@@ -295,7 +301,23 @@ trainer = Trainer(
 trainer.evaluate()
 
 # Save the fine-tuned model and tokenizer
-model.save_pretrained('./fine_tuned_math_shepherd_lora_8bit')
-tokenizer.save_pretrained('./fine_tuned_math_shepherd_lora_8bit')
+# model.save_pretrained(f'../ckpt/{prm_name}/fine_tuned_math_shepherd_mix_lora_16bit')
+# tokenizer.save_pretrained(f'../ckpt/{prm_name}/fine_tuned_math_shepherd_mix_lora_16bit')
 
+# for output in [output1,output2]:
+# # for output in [output1, output2,output3]:
+#     input_for_prm = f"{question} {output}"
+#     input_id = torch.tensor([tokenizer.encode(input_for_prm)])
+#     # print(input_id)
 
+#     with torch.no_grad():
+#         logits = model(input_id).logits[:,:,candidate_tokens]
+#         # print(logits)
+#         scores = logits.softmax(dim=-1)[:,:,0] 
+#         # print(scores)
+#         step_scores = scores[input_id == step_tag_id]
+        
+#         print(step_scores)
+#         print('aaaaaa')        
+# # tensor([?, ?, ?, ?])
+# # tensor([?, ?, ?, ?])
